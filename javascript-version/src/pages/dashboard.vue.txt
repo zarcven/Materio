@@ -1,0 +1,94 @@
+<script setup>
+import { ref, onMounted, nextTick } from 'vue'
+import axios from 'axios'
+import VueApexCharts from 'vue3-apexcharts'
+
+const inventoryTotal = ref(0)
+const orderTotal = ref(0)
+
+const barChart = ref({
+  series: [{
+    name: 'Total',
+    data: [0, 0] // Placeholder
+  }],
+  chartOptions: {
+    chart: {
+      type: 'bar',
+      height: 350
+    },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '40%',
+        endingShape: 'rounded'
+      }
+    },
+    dataLabels: {
+      enabled: true
+    },
+    xaxis: {
+      categories: ['Inventory', 'Orders']
+    },
+    yaxis: {
+      title: { text: 'Count' }
+    },
+    colors: ['#7367F0', '#28C76F'],
+    tooltip: {
+      y: {
+        formatter: val => `${val} items`
+      }
+    },
+    legend: {
+      position: 'bottom'
+    }
+  }
+})
+
+onMounted(async () => {
+  try {
+    const inventoryRes = await axios.get('/api/inventory-transactions')
+    const orderRes = await axios.get('/api/order-details')
+
+    // Force convert and verify
+    let inventorySum = 0
+    inventoryRes.data.forEach(txn => {
+      const qty = parseFloat(txn.quantity)
+      if (!isNaN(qty)) inventorySum += qty
+    })
+
+    const orderCount = orderRes.data.length
+
+    console.log('✅ Parsed Inventory Total:', inventorySum)
+    console.log('✅ Order Count:', orderCount)
+
+    // Force Vue to re-render after ref update
+    await nextTick()
+
+    // Update chart
+    barChart.value.series = [{
+      name: 'Total',
+      data: [inventorySum, orderCount]
+    }]
+    console.log('📊 Chart Series Set:', barChart.value.series)
+
+  } catch (err) {
+    console.error('❌ Data fetch error:', err)
+  }
+})
+</script>
+
+<template>
+  <VRow class="justify-center">
+    <VCol cols="12" md="8">
+      <VCard class="pa-4">
+        <h3 class="text-h5 mb-2">Total Inventory vs Orders</h3>
+        <VueApexCharts
+          type="bar"
+          height="350"
+          :options="barChart.chartOptions"
+          :series="barChart.series"
+        />
+      </VCard>
+    </VCol>
+  </VRow>
+</template>

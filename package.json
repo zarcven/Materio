@@ -6,5 +6,8 @@
   },
   "devDependencies": {
     "bumpp": "^8.2.1"
+  },
+  "dependencies": {
+    "axios": "^1.9.0"
   }
 }
